@@ -1,0 +1,17 @@
+faker
+networkx
+pandas
+numpy
+torch
+torch-geometric
+dowhy
+streamlit
+pyvis
+ollama
+xgboost
+scikit-learn
+matplotlib
+seaborn
+jupyter
+gremlinpython
+mlflow

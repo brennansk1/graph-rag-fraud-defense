@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  gremlin-server:
+    image: tinkerpop/gremlin-server:latest
+    ports:
+      - "8182:8182"
+    volumes:
+      - ./config/gremlin-server.yaml:/opt/gremlin-server/conf/gremlin-server.yaml
+
+  jupyter:
+    image: jupyter/scipy-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/home/jovyan/work
+
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    depends_on:
+      - gremlin-server
+    volumes:
+      - .:/app
