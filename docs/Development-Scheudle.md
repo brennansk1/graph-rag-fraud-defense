@@ -17,12 +17,13 @@ Your original proposal listed a 15-week timeline, but you only have **11 weeks**
 * **Deliverable:** A running local graph database accessible via Python.
 
 
-* **Week 2: Jan 12 – Jan 18**
+* **Week 2: Jan 12 – Jan 18** ✅ Completed
 * **Focus:** The "GraphFaker" Pipeline.
 * **Tasks:**
 * Code the `injector.py` script to create "Star Topologies" (Fraud Rings).
 * Implement the "Shared Attribute Attack" (10 users, 1 SSN).
 * Scale generation to 50,000 nodes/edges.
+* Include demographic correlations in fraud patterns for later DoWhy bias testing.
 
 
 * **Deliverable:** `graph_data.csv` containing hidden fraud patterns ready for ingestion.
@@ -71,7 +72,7 @@ Your original proposal listed a 15-week timeline, but you only have **11 weeks**
 * **Focus:** Optimization & Fairness (DoWhy).
 * **Tasks:**
 * Tune hyperparameters to achieve **Recall @ 1% FPR**.
-* Implement `dowhy` to test for bias (ensure high-degree nodes aren't just flagged because of zip codes).
+* Implement `dowhy` to test for bias by ensuring the model relies on graph structure, not demographics like zip codes.
 
 
 * **Deliverable:** Model metrics report proving the "Lift" over XGBoost.
@@ -87,7 +88,7 @@ Your original proposal listed a 15-week timeline, but you only have **11 weeks**
 * **Week 7: Feb 16 – Feb 22**
 * **Focus:** The Agent (LLM).
 * **Tasks:**
-* Set up Ollama (Llama 3) locally to prototype the Bedrock Agent.
+* Set up Ollama (Llama 3.2 3B) locally to prototype the Bedrock Agent.
 * Write the Prompt Engineering templates for the "Suspicious Activity Report" (SAR).
 * Feed graph neighbor data into the LLM context window.
 

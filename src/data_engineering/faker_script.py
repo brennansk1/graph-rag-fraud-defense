@@ -3,7 +3,7 @@ import pandas as pd
 
 fake = Faker()
 
-def generate_users(n=1000):
+def generate_users(n=50000):
     users = []
     for _ in range(n):
         user = {
@@ -19,4 +19,4 @@ def generate_users(n=1000):
 if __name__ == "__main__":
     df = generate_users()
     df.to_csv('data/raw/legitimate_users.csv', index=False)
-    print("Generated legitimate users.")
+    print(f"Generated {len(df)} legitimate users.")
