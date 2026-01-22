@@ -16,6 +16,25 @@
 - Added demographic correlations: Fraud users in star rings have zip code '90210'.
 - Generated graph_data.csv with 1,405 edges and users.csv with 50,000 nodes, ready for Gremlin ingestion.
 
+## Week 3: Ingestion & Visualization (Jan 19 – Jan 25)
+
+- Created gremlin_loader.py to load CSV data into Gremlin Server.
+- Implemented graph_visualizer.py with PyVis for fraud ring visualization.
+- Created feature_engineering.py to calculate graph features:
+  - Degree centrality, PageRank, clustering coefficient
+  - Betweenness and closeness centrality
+  - Connected component size, neighbor fraud ratio
+- Enhanced baseline_xgboost.py with comprehensive metrics (ROC-AUC, Recall @ 1% FPR).
+- Implemented full GraphSAGE model with training and evaluation.
+- Enhanced dowhy_fairness.py with demographic parity analysis.
+- Updated streamlit_app.py with full "Analyst Cockpit" dashboard:
+  - Overview page with system metrics
+  - Graph visualization page with fraud ring selection
+  - Fraud ring analysis with feature distributions
+  - Agent reports page for SAR generation
+  - Emergency lockdown button
+- Enhanced llm_agent.py with SAR generation, fraud detection explanation, and fraud ring analysis.
+
 ## Decision: LLM Model Selection for Agent Development
 
 Date: January 7, 2026
