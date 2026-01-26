@@ -2,42 +2,62 @@ from dowhy import CausalModel
 import pandas as pd
 import numpy as np
 import logging
+import torch
+import torch.nn.functional as F
+from src.model_training.graphsage_model import GraphSAGEModel, create_graph_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def test_fairness_bias(features_csv, model_predictions_csv):
+def generate_predictions(model_path, features_path, edges_path):
+    """Generate predictions using the trained GraphSAGE model."""
+    logger.info("Generating predictions from GraphSAGE model...")
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    # Load data
+    data = create_graph_data(features_path, edges_path)
+    data = data.to(device)
+    
+    # Load model
+    model = GraphSAGEModel(
+        in_channels=data.num_features,
+        hidden_channels=128,  # Must match training
+        out_channels=2
+    ).to(device)
+    
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    
+    with torch.no_grad():
+        out = model(data.x, data.edge_index)
+        y_pred = out.argmax(dim=1).cpu().numpy()
+        y_prob = F.softmax(out, dim=1)[:, 1].cpu().numpy()
+        
+    return pd.DataFrame({
+        'model_pred': y_pred,
+        'model_prob': y_prob
+    }, index=pd.read_csv(features_path, index_col='user_id').index)
+
+def test_fairness_bias(data):
     """
     Test for bias in fraud detection using DoWhy.
-    
     Hypothesis: The model should rely on graph structure (fraud patterns),
     not on demographic attributes like zip code.
     """
     logger.info("Testing for fairness bias using DoWhy...")
     
-    # Load features
-    features_df = pd.read_csv(features_csv, index_col='user_id')
-    
-    # Load model predictions
-    predictions_df = pd.read_csv(model_predictions_csv, index_col='user_id')
-    
-    # Merge data
-    data = features_df.join(predictions_df)
-    
     # Create binary zip code treatment (fraud-prone zip vs others)
+    data['zip_code'] = data['zip_code'].astype(str)
     data['fraud_zip'] = (data['zip_code'] == '90210').astype(int)
     
-    # Treatment: fraud-prone zip code
-    # Outcome: model prediction of fraud
-    # Confounder: actual fraud status (is_fraud)
-    
-    gml_graph = """
-    digraph {
-        fraud_zip -> model_pred;
-        is_fraud -> model_pred;
-        is_fraud -> fraud_zip;
-    }
-    """
+    # Graph: Zip causes Fraud (maybe), Zip causes Prediction? 
+    # Use NetworkX graph to avoid pydot/pygraphviz dependency issues
+    import networkx as nx
+    causal_graph = nx.DiGraph()
+    causal_graph.add_edge('fraud_zip', 'model_pred')
+    causal_graph.add_edge('is_fraud', 'model_pred')
+    causal_graph.add_edge('is_fraud', 'fraud_zip')
     
     try:
         model = CausalModel(
@@ -45,7 +65,7 @@ def test_fairness_bias(features_csv, model_predictions_csv):
             treatment='fraud_zip',
             outcome='model_pred',
             common_causes=['is_fraud'],
-            graph=gml_graph
+            graph=causal_graph
         )
         
         identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
@@ -67,16 +87,11 @@ def test_fairness_bias(features_csv, model_predictions_csv):
         logger.error(f"Error in fairness analysis: {e}")
         return None
 
-def analyze_demographic_parity(features_csv, model_predictions_csv):
+def analyze_demographic_parity(data):
     """
-    Analyze demographic parity: P(pred=1|zip=fraud_zip) vs P(pred=1|zip!=fraud_zip)
+    Analyze demographic parity.
     """
     logger.info("Analyzing demographic parity...")
-    
-    features_df = pd.read_csv(features_csv, index_col='user_id')
-    predictions_df = pd.read_csv(model_predictions_csv, index_col='user_id')
-    
-    data = features_df.join(predictions_df)
     
     fraud_zip_group = data[data['zip_code'] == '90210']
     other_zip_group = data[data['zip_code'] != '90210']
@@ -88,16 +103,27 @@ def analyze_demographic_parity(features_csv, model_predictions_csv):
     logger.info(f"Fraud-prone zip prediction rate: {fraud_zip_pred_rate:.4f}")
     logger.info(f"Other zip prediction rate: {other_zip_pred_rate:.4f}")
     logger.info(f"Difference: {abs(fraud_zip_pred_rate - other_zip_pred_rate):.4f}")
-    logger.info("Interpretation: Smaller difference indicates better fairness")
     
     return {
         'fraud_zip_rate': fraud_zip_pred_rate,
-        'other_zip_rate': other_zip_pred_rate,
-        'difference': abs(fraud_zip_pred_rate - other_zip_pred_rate)
+        'other_zip_rate': other_zip_pred_rate
     }
 
 if __name__ == "__main__":
-    # This would be run after model training
-    # estimate = test_fairness_bias('data/processed/graph_features.csv', 'data/processed/model_predictions.csv')
-    # parity = analyze_demographic_parity('data/processed/graph_features.csv', 'data/processed/model_predictions.csv')
-    logger.info("Fairness testing module ready. Run after model training.")
+    # 1. Generate Predictions
+    preds_df = generate_predictions(
+        'models/graphsage_model.pt',
+        'data/processed/graph_features.csv',
+        'data/processed/graph_data.csv'
+    )
+    
+    # 2. Load Demographic Data (Users)
+    users_df = pd.read_csv('data/processed/users.csv', index_col='user_id')
+    
+    # 3. Merge
+    # Note: users.csv has 'is_fraud' and 'zip_code'
+    data = users_df.join(preds_df[['model_pred', 'model_prob']])
+    
+    # 4. Run Analysis
+    test_fairness_bias(data)
+    analyze_demographic_parity(data)

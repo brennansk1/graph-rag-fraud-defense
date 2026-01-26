@@ -53,7 +53,7 @@ class FeatureEngineer:
     def calculate_betweenness_centrality(self):
         """Calculate betweenness centrality for all nodes."""
         logger.info("Calculating betweenness centrality...")
-        betweenness = nx.betweenness_centrality(self.G)
+        betweenness = nx.betweenness_centrality(self.G, k=100)
         return pd.Series(betweenness, name='betweenness_centrality')
     
     def calculate_closeness_centrality(self):

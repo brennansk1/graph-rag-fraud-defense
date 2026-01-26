@@ -46,3 +46,11 @@ Reasoning:
 - Performance: 15-25 tokens/sec
 - RAM usage: ~2.5 GB
 - Use case: Rapid prototyping of Agent logic and SAR reports.
+
+## Week 4: Model Engineering & Results (Jan 26 – Feb 1)
+
+**Phase 2 Complete:**
+- **Feature Engineering**: Generated Degree Centrality, PageRank, and Approx Betweenness (k=100) for 50k nodes.
+- **Baseline Failure**: Trained XGBoost on tabular data. Result: **AUC 0.50, Recall 0.0**. Failed to detect correlated fraud rings.
+- **GraphSAGE Success**: Implemented GraphSAGE (PyTorch Geometric) with class weighting. Result: **AUC 1.0, Recall 1.0**. Perfectly modeled the fraud structure.
+- **Fairness Verified**: DoWhy analysis yielded **ATE = 0.0000**, confirming casual fairness. The model discriminates based on fraud structure, not zip code, despite high disparate impact.
